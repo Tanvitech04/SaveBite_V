@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savebite - Small Changes, Less Waste | Indian Household Food Waste Platform</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col min-h-screen">
+
+  <!-- TOP HEADER / BANNER -->
+  <header class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Tagline -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('tracker')">
+          <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
+            <span class="text-2xl">🌱</span>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="font-extrabold text-xl tracking-tight text-white">Savebite</h1>
+              <span class="bg-emerald-500/30 text-emerald-200 text-xs px-2 py-0.5 rounded-full font-medium border border-emerald-400/30">v1.1 • Full-Stack</span>
+              <span id="api-status-badge" class="bg-emerald-400/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/40">API Online</span>
+            </div>
+            <p class="text-xs text-emerald-200 font-medium tracking-wide">small changes, less waste.</p>
+          </div>
+        </div>
+
+        <!-- Quick Summary Metrics Bar -->
+        <div class="hidden lg:flex items-center space-x-4 text-sm">
+          <div class="flex items-center space-x-2 bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-700/40">
+            <span class="text-emerald-400 font-bold text-base">₹</span>
+            <span class="text-emerald-200 text-xs">Wasted (Month):</span>
+            <span id="header-wasted-cost" class="font-bold text-white">₹0.00</span>
+          </div>
+          <div class="flex items-center space-x-2 bg-emerald-950/50 px-3 py-1.5 rounded-xl border border-emerald-700/40">
+            <i data-lucide="bell" class="w-4 h-4 text-amber-400"></i>
+            <span class="text-emerald-200 text-xs">Expiring Soon:</span>
+            <span id="header-expiring-count" class="font-bold text-amber-300">0 items</span>
+          </div>
+          <button onclick="handleCheckInStreak()" class="flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3 py-1.5 rounded-xl font-bold transition shadow-sm">
+            <span>🔥 Daily Check-in:</span>
+            <span id="header-streak" class="text-slate-950">7 Days</span>
+          </button>
+        </div>
+
+        <!-- Quick Action Buttons -->
+        <div class="flex items-center space-x-2">
+          <button onclick="openLogModal()" class="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-semibold px-3.5 py-2 rounded-xl text-sm transition shadow-md flex items-center space-x-1.5">
+            <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+            <span>Log Waste</span>
+          </button>
+          
+          <button id="mobile-menu-btn" onclick="toggleMobileNav()" class="md:hidden p-2 rounded-xl bg-emerald-950/50 text-emerald-200 hover:text-white">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN NAVIGATION TABS -->
+    <nav class="bg-emerald-950/70 backdrop-blur-md border-t border-emerald-800/60 hidden md:block">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex space-x-1 py-1.5 overflow-x-auto no-scrollbar">
+          <button onclick="switchTab('tracker')" id="tab-btn-tracker" class="nav-tab active-tab">
+            <span>🍽️</span> <span>Tracker</span>
+          </button>
+          <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="nav-tab">
+            <span>📊</span> <span>Dashboard</span>
+          </button>
+          <button onclick="switchTab('mealplan')" id="tab-btn-mealplan" class="nav-tab">
+            <span>🍲</span> <span>Daily Meal Planner</span>
+          </button>
+          <button onclick="switchTab('expiry')" id="tab-btn-expiry" class="nav-tab relative">
+            <span>⏰</span> <span>Expiry Reminders</span>
+            <span id="expiry-badge-dot" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse"></span>
+          </button>
+          <button onclick="switchTab('grocery')" id="tab-btn-grocery" class="nav-tab">
+            <span>🛒</span> <span>Grocery Planner</span>
+          </button>
+          <button onclick="switchTab('leftover')" id="tab-btn-leftover" class="nav-tab">
+            <span>🍱</span> <span>Leftover Ideas</span>
+          </button>
+          <button onclick="switchTab('tips')" id="tab-btn-tips" class="nav-tab">
+            <span>💡</span> <span>Kitchen Hacks</span>
+          </button>
+          <button onclick="switchTab('goals')" id="tab-btn-goals" class="nav-tab">
+            <span>🎯</span> <span>Goals & Badges</span>
+          </button>
+          <button onclick="switchTab('resources')" id="tab-btn-resources" class="nav-tab">
+            <span>📚</span> <span>Resources</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MOBILE DROPDOWN MENU -->
+    <div id="mobile-nav" class="hidden md:hidden bg-emerald-950 border-t border-emerald-800 px-4 py-3 space-y-1">
+      <button onclick="switchTab('tracker')" class="mobile-nav-tab">🍽️ Food Waste Tracker</button>
+      <button onclick="switchTab('dashboard')" class="mobile-nav-tab">📊 Waste Dashboard</button>
+      <button onclick="switchTab('mealplan')" class="mobile-nav-tab">🍲 Daily Meal Planner</button>
+      <button onclick="switchTab('expiry')" class="mobile-nav-tab">⏰ Expiry Reminders</button>
+      <button onclick="switchTab('grocery')" class="mobile-nav-tab">🛒 Grocery Planner</button>
+      <button onclick="switchTab('leftover')" class="mobile-nav-tab">🍱 Leftover Ideas</button>
+      <button onclick="switchTab('tips')" class="mobile-nav-tab">💡 Kitchen Hacks</button>
+      <button onclick="switchTab('goals')" class="mobile-nav-tab">🎯 Goals & Badges</button>
+      <button onclick="switchTab('resources')" class="mobile-nav-tab">📚 Awareness & Calculator</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- DAILY ECO BANNER -->
+    <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl p-5 text-white shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="text-3xl bg-white/20 p-2 rounded-xl backdrop-blur-md">🙏</div>
+        <div>
+          <h3 class="font-extrabold text-base">Annapoorna Rule: Respect Food, Waste Zero</h3>
+          <p class="text-xs text-emerald-100 mt-0.5">Track daily meals, reuse leftovers, and save money for your family.</p>
+        </div>
+      </div>
+      <button onclick="handleCheckInStreak()" class="bg-white hover:bg-emerald-50 text-emerald-900 font-bold px-4 py-2 rounded-xl text-xs shadow-md shrink-0 flex items-center gap-1.5">
+        <span>🔥 Log Zero Waste Today</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: FOOD WASTE TRACKER -->
+    <section id="tab-content-tracker" class="tab-view space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span>🍽️</span> Food Waste Tracker (Indian Meals)
+          </h2>
+          <p class="text-slate-600 text-sm mt-1">Track discarded food items in Rupees (₹) to understand patterns and eliminate household waste.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportWasteLogsCSV()" class="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3.5 py-2.5 rounded-xl transition shadow-sm text-xs">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Export CSV</span>
+          </button>
+          <button onclick="openLogModal()" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-md shadow-emerald-600/20 text-xs">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Log Wasted Item</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tracker Stats Overview -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-xl">
+            <i data-lucide="trash-2" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Wasted Items</p>
+            <h3 id="stat-total-items" class="text-2xl font-bold text-slate-900">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
+            <span class="text-2xl font-extrabold">₹</span>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Financial Loss</p>
+            <h3 id="stat-total-loss" class="text-2xl font-bold text-emerald-700">₹0.00</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl">
+            <i data-lucide="pie-chart" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Top Wasted Category</p>
+            <h3 id="stat-top-category" class="text-lg font-bold text-slate-900 truncate">N/A</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
+            <i data-lucide="help-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Primary Waste Reason</p>
+            <h3 id="stat-top-reason" class="text-lg font-bold text-slate-900 truncate">N/A</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters & Waste Log Table -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <!-- Controls Bar -->
+        <div class="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+          <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+            <input type="text" id="tracker-search" placeholder="Search item (e.g. Leftover Rice, Sabzi, Dahi)..." onkeyup="renderWasteLogTable()" class="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <select id="tracker-filter-category" onchange="renderWasteLogTable()" class="px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="ALL">All Categories</option>
+              <option value="Cooked Meals">🍲 Cooked Meals (Rice, Dal, Sabzi)</option>
+              <option value="Vegetables">🥬 Fresh Vegetables & Sabzi</option>
+              <option value="Dairy">🥛 Dairy Products (Milk, Dahi, Paneer)</option>
+              <option value="Rotis & Bread">🍞 Rotis, Parathas & Bread</option>
+              <option value="Non-Veg & Eggs">🥩 Fish / Meat / Eggs</option>
+              <option value="Pantry">🥫 Dal, Atta & Pantry</option>
+            </select>
+
+            <select id="tracker-filter-reason" onchange="renderWasteLogTable()" class="px-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="ALL">All Waste Reasons</option>
+              <option value="Cooked too much food">Cooked too much food</option>
+              <option value="Food spoils before consume">Food spoils before consume</option>
+              <option value="Expired food">Expired food</option>
+              <option value="Poor meal planning">Poor meal planning</option>
+              <option value="Change in plan">Change in plan</option>
+              <option value="Plate Waste">Plate Waste</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200">
+                <th class="py-3.5 px-4">Item Name</th>
+                <th class="py-3.5 px-4">Category</th>
+                <th class="py-3.5 px-4">Quantity</th>
+                <th class="py-3.5 px-4">Est. Value (₹)</th>
+                <th class="py-3.5 px-4">Reason</th>
+                <th class="py-3.5 px-4">Date Logged</th>
+                <th class="py-3.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="waste-log-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="tracker-empty-state" class="hidden p-12 text-center text-slate-400">
+          <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
+          <p class="font-medium text-slate-600">No wasted items logged yet!</p>
+          <p class="text-xs text-slate-400 mt-1">Keep up the great work or click "Log Wasted Item" to add an entry.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: WASTE DASHBOARD & ANALYTICS -->
+    <section id="tab-content-dashboard" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <span>📊</span> Waste Dashboard & Analytics
+        </h2>
+        <p class="text-slate-600 text-sm mt-1">Visualize your household food waste trends, rupee loss vs savings, and environmental footprint.</p>
+      </div>
+
+      <!-- Impact Summary Banner -->
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+        <div class="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="border-b md:border-b-0 md:border-r border-emerald-600/50 pb-4 md:pb-0 md:pr-6">
+            <span class="text-xs uppercase font-semibold text-emerald-200 tracking-wider">Estimated Monthly Financial Savings</span>
+            <div class="text-3xl font-extrabold mt-1 text-white" id="dash-savings-val">₹3,450.00</div>
+            <p class="text-xs text-emerald-200 mt-1">Compared to unmanaged Indian households!</p>
+          </div>
+          <div class="border-b md:border-b-0 md:border-r border-emerald-600/50 pb-4 md:pb-0 md:pr-6">
+            <span class="text-xs uppercase font-semibold text-emerald-200 tracking-wider">Carbon Footprint Saved</span>
+            <div class="text-3xl font-extrabold mt-1 text-emerald-300" id="dash-co2-val">28.4 kg CO₂e</div>
+            <p class="text-xs text-emerald-200 mt-1">Equivalent to reducing 85 km driving emissions!</p>
+          </div>
+          <div>
+            <span class="text-xs uppercase font-semibold text-emerald-200 tracking-wider">Water Conserved</span>
+            <div class="text-3xl font-extrabold mt-1 text-teal-300" id="dash-water-val">2,450 Litres</div>
+            <p class="text-xs text-emerald-200 mt-1">Equivalent to 40 bath buckets saved!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+              <i data-lucide="trending-down" class="w-5 h-5 text-emerald-600"></i>
+              Monthly Financial Waste Trend (₹)
+            </h3>
+            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">-35% vs 3 Months Ago</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-monthly-trend"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-600"></i>
+              Waste Breakdown by Food Type
+            </h3>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-category-doughnut"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+          <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600"></i>
+          Primary Causes of Household Food Waste
+        </h3>
+        <div class="h-64 relative">
+          <canvas id="chart-reasons-bar"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DAILY MEAL PLANNER (NEW FEATURE) -->
+    <section id="tab-content-mealplan" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span>🍲</span> What's in My Fridge Today? (Zero-Waste Daily Meal Plan)
+          </h2>
+          <p class="text-slate-600 text-sm mt-1">Smart meal schedule generated dynamically from items expiring soonest in your kitchen!</p>
+        </div>
+        <button onclick="renderDailyMealPlan()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Refresh Meal Plan</span>
+        </button>
+      </div>
+
+      <div id="meal-plan-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 4: EXPIRY REMINDERS -->
+    <section id="tab-content-expiry" class="tab-view hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span>⏰</span> Expiry Reminders & Pantry Tracker
+          </h2>
+          <p class="text-slate-600 text-sm mt-1">Keep track of Indian grocery items, milk, curd, paneer, and cooked meals in your fridge before they spoil.</p>
+        </div>
+        <button onclick="openExpiryModal()" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl transition shadow-md">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          <span>Add Fridge/Pantry Item</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+        <button onclick="filterExpiryTab('ALL')" id="expiry-filter-all" class="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-900 text-white">All Items (<span id="count-exp-all">0</span>)</button>
+        <button onclick="filterExpiryTab('URGENT')" id="expiry-filter-urgent" class="px-4 py-2 text-sm font-semibold rounded-xl bg-red-50 text-red-700 hover:bg-red-100">🔴 Urgent / Today (<span id="count-exp-urgent">0</span>)</button>
+        <button onclick="filterExpiryTab('SOON')" id="expiry-filter-soon" class="px-4 py-2 text-sm font-semibold rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100">🟡 Soon (1-3 Days) (<span id="count-exp-soon">0</span>)</button>
+        <button onclick="filterExpiryTab('FRESH')" id="expiry-filter-fresh" class="px-4 py-2 text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100">🟢 Fresh (4+ Days) (<span id="count-exp-fresh">0</span>)</button>
+      </div>
+
+      <div id="expiry-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 5: GROCERY PLANNER -->
+    <section id="tab-content-grocery" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span>🛒</span> Indian Grocery Planner & Kirana List
+          </h2>
+          <p class="text-slate-600 text-sm mt-1">Plan grocery shopping for dal, atta, vegetables & spices while avoiding duplicate buys.</p>
+        </div>
+        <button onclick="exportGroceryListText()" class="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+          <span>Copy for WhatsApp / Kirana</span>
+        </button>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <form id="grocery-add-form" onsubmit="handleGroceryAdd(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="md:col-span-2">
+            <input type="text" id="groc-name" placeholder="Item Name (e.g., Fresh Paneer, Atta, Toor Dal, Tomatoes)..." required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <div>
+            <select id="groc-category" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="Vegetables">🥬 Fresh Vegetables & Sabzi</option>
+              <option value="Dairy">🥛 Dairy (Milk, Curd, Paneer)</option>
+              <option value="Rotis & Bread">🍞 Rotis, Atta & Bakery</option>
+              <option value="Non-Veg & Eggs">🥩 Fish, Meat & Eggs</option>
+              <option value="Pantry">刊 Dal, Rice & Spices</option>
+            </select>
+          </div>
+          <div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl transition shadow-md flex items-center justify-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Add to Plan</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-3">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-600 shrink-0"></i>
+          <span><strong>Smart Indian Kitchen Rule:</strong> Check existing spices, dals, or veggies in your fridge before buying extra!</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Planned Items (<span id="grocery-count">0</span>)</h3>
+          <button onclick="clearBoughtGrocery()" class="text-xs text-slate-500 hover:text-slate-800 font-semibold underline">Clear Bought Items</button>
+        </div>
+        <div id="grocery-list-container" class="divide-y divide-slate-100">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: LEFTOVER IDEAS -->
+    <section id="tab-content-leftover" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <span>🍱</span> Leftover Ideas (Indian Recipe Generator)
+        </h2>
+        <p class="text-slate-600 text-sm mt-1">Select leftover rice, extra roties, leftover dal or cooked sabzi to generate delicious authentic Indian recipes instantly!</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <label class="block text-sm font-semibold text-slate-800">Select Available Leftover Ingredients:</label>
+        
+        <div id="leftover-ingredient-tags" class="flex flex-wrap gap-2">
+          <!-- Clickable ingredient pills -->
+        </div>
+
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+          <input type="text" id="custom-leftover-input" placeholder="Type custom leftover (e.g. Leftover Rajma, Boiled Potatoes, Sour Dahi)..." class="flex-1 px-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          <button onclick="addCustomLeftover()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm px-4 py-2 rounded-xl">Add Tag</button>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-lg">Matching Recipes (<span id="recipes-count">0</span>)</h3>
+          <span class="text-xs text-slate-500">Sorted by ingredient compatibility</span>
+        </div>
+
+        <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 7: SMART REDUCTION TIPS -->
+    <section id="tab-content-tips" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <span>💡</span> Indian Kitchen Food Storage & Reduction Tips
+        </h2>
+        <p class="text-slate-600 text-sm mt-1">Proven hacks tailored for Indian kitchens to keep vegetables, dahi, and cooked meals fresh longer.</p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-2xl border border-slate-200/80">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+          <input type="text" id="tips-search" onkeyup="renderTips()" placeholder="Search tips (e.g., coriander, dahi, roties, dal)..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button onclick="filterTipsCategory('ALL')" id="tip-cat-all" class="tip-cat-btn active-tip-cat">All</button>
+          <button onclick="filterTipsCategory('Storage')" id="tip-cat-storage" class="tip-cat-btn">🍏 Storage Hacks</button>
+          <button onclick="filterTipsCategory('Portion')" id="tip-cat-portion" class="tip-cat-btn">📏 Portioning</button>
+          <button onclick="filterTipsCategory('Leftovers')" id="tip-cat-leftovers" class="tip-cat-btn">🍲 Leftovers</button>
+          <button onclick="filterTipsCategory('Shopping')" id="tip-cat-shopping" class="tip-cat-btn">🛒 Shopping</button>
+        </div>
+      </div>
+
+      <div id="tips-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- TAB 8: GOALS & BADGES -->
+    <section id="tab-content-goals" class="tab-view hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <span>🎯</span> Household Reduction Goals & Badges
+          </h2>
+          <p class="text-slate-600 text-sm mt-1">Set monthly waste limits in Rupees (₹), track progress, and unlock sustainable kitchen badges.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="handleCheckInStreak()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+            <span>🔥 Check In Today (+50 pts)</span>
+          </button>
+          <button onclick="openGoalModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow-md">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>New Goal</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="font-bold text-slate-800 text-lg">Active Goals & Targets</h3>
+        <div id="goals-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+          <span>🏆</span> Eco Achievements & Unlockable Badges
+        </h3>
+        <p class="text-xs text-slate-500">Achieve your food waste targets to unlock sustainable badges!</p>
+        
+        <div id="badges-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+          <!-- Badges rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 9: AWARENESS RESOURCES & CALCULATOR -->
+    <section id="tab-content-resources" class="tab-view hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+        <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <span>📚</span> Awareness Resources & Household Calculator
+        </h2>
+        <p class="text-slate-600 text-sm mt-1">Learn about food waste impact and calculate annual rupee savings for your household.</p>
+      </div>
+
+      <div class="bg-gradient-to-br from-slate-900 to-emerald-950 p-6 md:p-8 rounded-2xl text-white shadow-xl space-y-6">
+        <div class="border-b border-slate-700 pb-4">
+          <h3 class="text-xl font-extrabold text-emerald-400 flex items-center gap-2">
+            <i data-lucide="calculator" class="w-6 h-6"></i>
+            Indian Household Food Waste Savings Calculator (₹)
+          </h3>
+          <p class="text-slate-300 text-xs mt-1">Adjust sliders below to project your potential annual savings by adopting Savebite habits.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Household Members: <span id="calc-people-val" class="text-emerald-400 font-bold">4 People</span></label>
+            <input type="range" id="calc-people" min="1" max="8" value="4" oninput="updateCalculator()" class="w-full accent-emerald-500">
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Weekly Grocery Spend (₹): <span id="calc-spend-val" class="text-emerald-400 font-bold">₹2,500</span></label>
+            <input type="range" id="calc-spend" min="500" max="10000" step="250" value="2500" oninput="updateCalculator()" class="w-full accent-emerald-500">
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">Estimated Wasted (%): <span id="calc-percent-val" class="text-amber-400 font-bold">20%</span></label>
+            <input type="range" id="calc-percent" min="5" max="50" step="5" value="20" oninput="updateCalculator()" class="w-full accent-amber-500">
+          </div>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+          <div>
+            <span class="text-xs text-slate-300 uppercase tracking-wider">Potential Annual Money Saved</span>
+            <div id="calc-out-money" class="text-3xl font-extrabold text-emerald-400 mt-1">₹26,000</div>
+          </div>
+          <div>
+            <span class="text-xs text-slate-300 uppercase tracking-wider">Yearly Food Saved (kg)</span>
+            <div id="calc-out-weight" class="text-3xl font-extrabold text-teal-300 mt-1">200 kg</div>
+          </div>
+          <div>
+            <span class="text-xs text-slate-300 uppercase tracking-wider">Annual CO₂ Reduced</span>
+            <div id="calc-out-co2" class="text-3xl font-extrabold text-sky-300 mt-1">440 kg CO₂e</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+            <span>🧊</span> Indian Fridge Storage Cheat Sheet
+          </h3>
+          <ul class="space-y-3 text-sm text-slate-700">
+            <li class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-start gap-3">
+              <span class="font-bold text-blue-800 shrink-0">Top Shelves:</span>
+              <span>Leftover Sabzi, Dal, Chutneys, Cooked Rice, Dahi and Paneer.</span>
+            </li>
+            <li class="p-3 bg-cyan-50/60 rounded-xl border border-cyan-100 flex items-start gap-3">
+              <span class="font-bold text-cyan-800 shrink-0">Lower Shelves:</span>
+              <span>Raw Meats, Eggs, Milk packets, Fresh Atta dough.</span>
+            </li>
+            <li class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex items-start gap-3">
+              <span class="font-bold text-emerald-800 shrink-0">Crisper Drawer:</span>
+              <span>Leafy greens (Palak, Methi, Dhaniya), Green Chillies, Tomatoes, Ginger.</span>
+            </li>
+            <li class="p-3 bg-amber-50/60 rounded-xl border border-amber-100 flex items-start gap-3">
+              <span class="font-bold text-amber-800 shrink-0">Fridge Door:</span>
+              <span>Bottles, Pickles (Achar), Ketchup, Spices (Avoid storing milk packets here!).</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+            <span>📊</span> Household Survey Insights
+          </h3>
+          <div class="space-y-3 text-sm">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="font-bold text-slate-800">Top Wasted Item: Cooked Meals</p>
+              <p class="text-xs text-slate-600 mt-1">Survey data reveals leftover cooked rice, dal, and excess roties are the #1 source of household waste.</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="font-bold text-slate-800">Primary Cause: Cooking Too Much</p>
+              <p class="text-xs text-slate-600 mt-1">Over-estimating meal portions and lack of meal planning cause over 45% of Indian kitchen waste.</p>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="font-bold text-slate-800">Best Solution: Reusing Leftovers</p>
+              <p class="text-xs text-slate-600 mt-1">Converting leftover rice into Tadka Rice or leftover sabzi into Parathas eliminates 60%+ of food waste!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🌱</span>
+        <div>
+          <p class="font-bold text-white text-base">Savebite</p>
+          <p class="text-xs text-slate-500">small changes, less waste.</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 text-center md:text-right">Full-Stack Solution for Indian households. Supports Express REST API server & local browser storage.</p>
+    </div>
+  </footer>
+
+  <!-- MODALS -->
+
+  <!-- MODAL 1: LOG FOOD WASTE MODAL -->
+  <div id="modal-log-waste" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span>🍽️</span> Log Wasted Item
+        </h3>
+        <button onclick="closeLogModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-log-waste" onsubmit="handleLogWasteSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Food Item Name</label>
+          <input type="text" id="log-item-name" required placeholder="e.g. Leftover Rice, 3 Extra Roties, Spoiled Dahi" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Category</label>
+            <select id="log-category" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="Cooked Meals">🍲 Cooked Meals</option>
+              <option value="Vegetables">🥬 Vegetables & Sabzi</option>
+              <option value="Dairy">🥛 Dairy (Milk, Dahi, Paneer)</option>
+              <option value="Rotis & Bread">🍞 Rotis, Parathas & Bread</option>
+              <option value="Non-Veg & Eggs">🥩 Fish / Meat / Eggs</option>
+              <option value="Pantry">🥫 Dal, Atta & Pantry</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Estimated Cost (₹)</label>
+            <input type="number" id="log-cost" step="5" min="0" required placeholder="e.g. 60" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Quantity</label>
+            <input type="text" id="log-quantity" required placeholder="e.g. 2 bowls, 3 pcs, 250g" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Reason for Waste</label>
+            <select id="log-reason" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="Cooked too much food">Cooked too much food</option>
+              <option value="Food spoils before consume">Food spoils before consume</option>
+              <option value="Expired food">Expired food</option>
+              <option value="Poor meal planning">Poor meal planning</option>
+              <option value="Change in plan">Change in plan</option>
+              <option value="Plate Waste">Plate Waste</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Date Wasted</label>
+          <input type="date" id="log-date" required class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeLogModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">Save Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ADD EXPIRY ITEM MODAL -->
+  <div id="modal-add-expiry" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span>⏰</span> Add Fridge / Pantry Item
+        </h3>
+        <button onclick="closeExpiryModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-add-expiry" onsubmit="handleExpiryAddSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Item Name</label>
+          <input type="text" id="exp-item-name" required placeholder="e.g. Amul Milk Packet, Fresh Dahi, Paneer" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Category</label>
+            <select id="exp-category" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="Dairy">🥛 Dairy Products</option>
+              <option value="Vegetables">🥬 Vegetables & Sabzi</option>
+              <option value="Cooked Meals">🍲 Cooked Meals</option>
+              <option value="Rotis & Bread">🍞 Rotis & Bakery</option>
+              <option value="Pantry">🥫 Pantry & Spices</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Quantity</label>
+            <input type="text" id="exp-quantity" required placeholder="e.g. 500 ml, 200g, 1 packet" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Expiration Date</label>
+          <input type="date" id="exp-date" required class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeExpiryModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: RECIPE DETAIL MODAL -->
+  <div id="modal-recipe-detail" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="recipe-modal-title" class="text-xl font-bold text-slate-900">Recipe Title</h3>
+        <button onclick="closeRecipeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-4 text-xs font-semibold text-slate-600 bg-slate-50 p-3 rounded-xl">
+          <span id="recipe-modal-time">⏱️ 15 mins</span>
+          <span id="recipe-modal-diff">📊 Easy</span>
+          <span id="recipe-modal-servings">🍽️ 2 Servings</span>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Ingredients Needed:</h4>
+          <ul id="recipe-modal-ingredients" class="list-disc list-inside text-sm text-slate-700 space-y-1"></ul>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Step-by-Step Instructions:</h4>
+          <ol id="recipe-modal-steps" class="list-decimal list-inside text-sm text-slate-700 space-y-2"></ol>
+        </div>
+
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs">
+          <p class="font-bold">🌱 Zero-Waste Kitchen Tip:</p>
+          <p id="recipe-modal-tip">Tip content here...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: NEW GOAL MODAL -->
+  <div id="modal-add-goal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span>🎯</span> Create Waste Reduction Goal
+        </h3>
+        <button onclick="closeGoalModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="form-add-goal" onsubmit="handleGoalAddSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Goal Title</label>
+          <input type="text" id="goal-title" required placeholder="e.g. Keep monthly food waste under ₹500" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Target Limit (₹)</label>
+            <input type="number" id="goal-target" required min="50" step="50" placeholder="e.g. 500" class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Timeframe</label>
+            <select id="goal-timeframe" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeGoalModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md">Set Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

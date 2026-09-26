@@ -1,0 +1,16 @@
+{
+  "name": "savebite",
+  "private": true,
+  "version": "1.1.0",
+  "description": "Savebite - Small Changes, Less Waste (Full-Stack Indian Household Food Waste Reduction Platform)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
